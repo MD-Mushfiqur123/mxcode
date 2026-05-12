@@ -11,8 +11,8 @@ import { Auth } from "@/auth"
 import { SyncEvent } from "@/sync"
 import { EventSequenceTable, EventTable } from "@/sync/event.sql"
 import { Flag } from "@opencode-ai/core/flag/flag"
+import { AppFileSystem } from "@opencode-ai/core/filesystem"
 import * as Log from "@opencode-ai/core/util/log"
-import { Filesystem } from "@/util/filesystem"
 import { ProjectID } from "@/project/schema"
 import { Slug } from "@opencode-ai/core/util/slug"
 import { WorkspaceTable } from "./workspace.sql"
@@ -175,6 +175,7 @@ export const layer = Layer.effect(
     const http = yield* HttpClient.HttpClient
     const sync = yield* SyncEvent.Service
     const vcs = yield* Vcs.Service
+    const fs = yield* AppFileSystem.Service
     const connections = new Map<WorkspaceID, ConnectionStatus>()
     const syncFibers = yield* FiberMap.make<WorkspaceID, void, SyncLoopError>()
 
@@ -500,7 +501,7 @@ export const layer = Layer.effect(
       if (!target) return
 
       if (target.type === "local") {
-        setStatus(space.id, (yield* Effect.promise(() => Filesystem.exists(target.directory))) ? "connected" : "error")
+        setStatus(space.id, (yield* fs.existsSafe(target.directory)) ? "connected" : "error")
         return
       }
 
@@ -1039,6 +1040,7 @@ export const defaultLayer = layer.pipe(
   Layer.provide(SessionPrompt.defaultLayer),
   Layer.provide(Project.defaultLayer),
   Layer.provide(Vcs.defaultLayer),
+  Layer.provide(AppFileSystem.defaultLayer),
   Layer.provide(FetchHttpClient.layer),
 )
 
