@@ -293,7 +293,8 @@ export const layer: Layer.Layer<
         return {
           title: value.name,
           metadata: value.result.type === "json" && isRecord(value.result.value) ? value.result.value : {},
-          output: typeof value.result.value === "string" ? value.result.value : (JSON.stringify(value.result.value) ?? ""),
+          output:
+            typeof value.result.value === "string" ? value.result.value : (JSON.stringify(value.result.value) ?? ""),
         }
       }
 
@@ -579,11 +580,11 @@ export const layer: Layer.Layer<
           case "step-finish": {
             const completedSnapshot = yield* snapshot.track()
             yield* Effect.forEach(Object.keys(ctx.reasoningMap), finishReasoning)
-              const usage = Session.getUsage({
-                model: ctx.model,
-                usage: value.usage ?? new Usage({}),
-                metadata: value.providerMetadata,
-              })
+            const usage = Session.getUsage({
+              model: ctx.model,
+              usage: value.usage ?? new Usage({}),
+              metadata: value.providerMetadata,
+            })
             if (!ctx.assistantMessage.summary) {
               // TODO(v2): Temporary dual-write while migrating session messages to v2 events.
               if (Flag.OPENCODE_EXPERIMENTAL_EVENT_SYSTEM) {
@@ -708,7 +709,6 @@ export const layer: Layer.Layer<
 
           case "finish":
             return
-
         }
       })
 
