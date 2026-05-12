@@ -6,6 +6,7 @@ import { pathToFileURL } from "url"
 import { Agent } from "../../src/agent/agent"
 import { Bus } from "../../src/bus"
 import { Config } from "../../src/config/config"
+import { ConfigPaths } from "../../src/config/paths"
 import { Env } from "../../src/env"
 import { Plugin } from "../../src/plugin"
 import { AccountTest } from "../fake/account"
@@ -28,6 +29,7 @@ const configLayer = Config.layer.pipe(
   Layer.provide(AuthTest.empty),
   Layer.provide(AccountTest.empty),
   Layer.provide(NpmTest.noop),
+  Layer.provide(ConfigPaths.defaultLayer),
 )
 const pluginLayer = Plugin.layer.pipe(Layer.provide(Bus.layer), Layer.provide(configLayer))
 const agentLayer = Agent.layer.pipe(

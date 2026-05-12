@@ -5,7 +5,7 @@ import { mergeDeep, unique } from "remeda"
 import { Context, Effect, Fiber, Layer, Schema } from "effect"
 import { ConfigParse } from "@/config/parse"
 import { InvalidError } from "@/config/error"
-import * as ConfigPaths from "@/config/paths"
+import { ConfigPaths } from "@/config/paths"
 import { migrateTuiConfig } from "./tui-migrate"
 import { KeymapLeaderTimeoutDefault, TuiInfo } from "./tui-schema"
 import { Flag } from "@opencode-ai/core/flag/flag"
@@ -71,6 +71,7 @@ function normalize(raw: Record<string, unknown>) {
 
 const loadState = Effect.fn("TuiConfig.loadState")(function* (ctx: { directory: string }) {
   const afs = yield* AppFileSystem.Service
+  const paths = yield* ConfigPaths.Service
 
   const resolvePlugins = (config: Info, configFilepath: string): Effect.Effect<Info> =>
     Effect.gen(function* () {
@@ -148,10 +149,10 @@ const loadState = Effect.fn("TuiConfig.loadState")(function* (ctx: { directory: 
 
   // Every config dir we may read from: global config dir, any `.opencode`
   // folders between cwd and home, and OPENCODE_CONFIG_DIR.
-  const directories = yield* ConfigPaths.directories(ctx.directory)
+  const directories = yield* paths.directories(ctx.directory)
   yield* Effect.promise(() => migrateTuiConfig({ directories, cwd: ctx.directory }))
 
-  const projectFiles = Flag.OPENCODE_DISABLE_PROJECT_CONFIG ? [] : yield* ConfigPaths.files("tui", ctx.directory)
+  const projectFiles = Flag.OPENCODE_DISABLE_PROJECT_CONFIG ? [] : yield* paths.projectFiles("tui", ctx.directory)
 
   const acc: Acc = {
     result: {},
@@ -244,7 +245,11 @@ export const layer = Layer.effect(
   }).pipe(Effect.withSpan("TuiConfig.layer")),
 )
 
-export const defaultLayer = layer.pipe(Layer.provide(Npm.defaultLayer), Layer.provide(AppFileSystem.defaultLayer))
+export const defaultLayer = layer.pipe(
+  Layer.provide(Npm.defaultLayer),
+  Layer.provide(AppFileSystem.defaultLayer),
+  Layer.provide(ConfigPaths.defaultLayer),
+)
 
 const { runPromise } = makeRuntime(Service, defaultLayer)
 
