@@ -1,9 +1,9 @@
 <p align="center">
-  <a href="https://opencode.ai">
+  <a href="https://github.com/MD-Mushfiqur123/mxcode">
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="mxcode logo">
     </picture>
   </a>
 </p>
