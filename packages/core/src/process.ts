@@ -39,6 +39,11 @@ export type Interface = ChildProcessSpawner["Service"] & {
     command: ChildProcess.Command,
     options?: RunStreamOptions,
   ) => Stream.Stream<string, AppProcessError>
+  readonly runWithStdin: (
+    command: ChildProcess.Command,
+    stdin: string | Uint8Array | Stream.Stream<Uint8Array, PlatformError>,
+    options?: RunOptions,
+  ) => Effect.Effect<RunResult, AppProcessError>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/AppProcess") {}
@@ -119,7 +124,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const spawner = yield* ChildProcessSpawner
 
-    const run = Effect.fn("AppProcess.run")(function* (command: ChildProcess.Command, options?: RunOptions) {
+    const runCommand = (command: ChildProcess.Command, options?: RunOptions) => {
       const description = describeCommand(command)
       const collect = Effect.scoped(
         Effect.gen(function* () {
@@ -155,7 +160,34 @@ export const layer = Layer.effect(
             ),
           )
         : timed
-      return yield* aborted.pipe(Effect.catch((cause) => Effect.fail(wrapError(description, cause))))
+      return aborted.pipe(Effect.catch((cause) => Effect.fail(wrapError(description, cause))))
+    }
+
+    const run = Effect.fn("AppProcess.run")(function* (command: ChildProcess.Command, options?: RunOptions) {
+      return yield* runCommand(command, options)
+    })
+
+    const runWithStdin = Effect.fn("AppProcess.runWithStdin")(function* (
+      command: ChildProcess.Command,
+      stdin: string | Uint8Array | Stream.Stream<Uint8Array, PlatformError>,
+      options?: RunOptions,
+    ) {
+      if (command._tag !== "StandardCommand") {
+        return yield* Effect.fail(
+          new AppProcessError({
+            command: describeCommand(command),
+            cause: new Error("runWithStdin only supports StandardCommand; received PipedCommand"),
+          }),
+        )
+      }
+      const stream =
+        typeof stdin === "string"
+          ? Stream.make(new TextEncoder().encode(stdin))
+          : stdin instanceof Uint8Array
+            ? Stream.make(stdin)
+            : stdin
+      const next = ChildProcess.make(command.command, command.args, { ...command.options, stdin: stream })
+      return yield* runCommand(next, options)
     })
 
     const runStream = (command: ChildProcess.Command, options?: RunStreamOptions): Stream.Stream<string, AppProcessError> => {
@@ -198,7 +230,7 @@ export const layer = Layer.effect(
       )
     }
 
-    return Service.of({ ...spawner, run, runStream })
+    return Service.of({ ...spawner, run, runStream, runWithStdin })
   }),
 )
 
